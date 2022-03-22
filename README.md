@@ -165,3 +165,36 @@ Any tsconfig.json can be used, but if you do, set the environment variable `TS_N
 
 - _Gerar uuid_
   [uuid](https://www.uuidgenerator.net/)
+
+  ## Desploy Serverless na AWS
+
+  - No console
+  - Pesquisar por IAM
+  - Usuários
+  - Adicionar usuários
+    - nome
+    - Chave de acesso programático
+    - Anexa politicas
+    - _administratorAccess_
+    - Proximo em tags
+    - criar usuário
+      - Copiar as duas chaves de acesso
+      - ID da chave de acesso
+      - Chave de acesso secreta
+
+- Vai no terminal
+- serverless config credentials --provider aws --key=**ID da chave de acesso** --secret **Chave de acesso secreta**
+- cd ~/.aws **se deu tudo certo**
+- **credentials_old**
+
+## Lambda
+
+- AWS Lambda
+- Funções lambda
+- Clique na função criada
+- Monitor do trafego
+
+## PDF
+
+- gera um PDF a partir de uma página web
+- npm install chrome-aws-lambda --save-prod
