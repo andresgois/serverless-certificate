@@ -196,5 +196,23 @@ Any tsconfig.json can be used, but if you do, set the environment variable `TS_N
 
 ## PDF
 
+[puppertier](https://github.com/alixaxel/chrome-aws-lambda)
+
 - gera um PDF a partir de uma página web
 - npm install chrome-aws-lambda --save-prod
+
+## Salvar o Certificado no S3
+
+- Console AWS
+- S3
+- Criar bucket
+  - Nome
+  - Região
+  - Retirar bloqueios
+  - Criar
+- Na aplicação
+- importar S3 no generateCertificate
+
+## Deploy da aplicação na AWS
+
+-
