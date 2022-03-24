@@ -1,11 +1,12 @@
 import { APIGatewayProxyHandler } from "aws-lambda";
 import { document } from "src/utils/dynamodbClient";
 import { compile } from "handlebars";
-import * as dayjs from "dayjs";
+import dayjs from "dayjs";
 
 import { join } from "path";
 import { readFileSync } from "fs";
-import * as chromium from "chrome-aws-lambda";
+import chromium from "chrome-aws-lambda";
+import { S3 } from "aws-sdk";
 
 interface ICreateCertificate {
   id: string;
@@ -22,7 +23,7 @@ interface ITemplate {
 }
 
 const compileTemplate = async (data: ITemplate) => {
-  const filePath = join(process.cwd(), "src", "templates", "certificates.hbs");
+  const filePath = join(process.cwd(), "src", "templates", "certificate.hbs");
 
   const html = readFileSync(filePath, "utf-8");
 
@@ -33,18 +34,6 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   /** Vai receber: id, name, grade   */
   const { id, name, grade } = JSON.parse(event.body) as ICreateCertificate;
 
-  await document
-    .put({
-      TableName: "users_certificate",
-      Item: {
-        id,
-        name,
-        grade,
-        created_at: new Date().getTime(),
-      },
-    })
-    .promise();
-
   const response = await document
     .query({
       TableName: "users_certificate",
@@ -54,6 +43,22 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       },
     })
     .promise();
+
+  const userAlreadyExists = response.Items[0];
+
+  if (!userAlreadyExists) {
+    await document
+      .put({
+        TableName: "users_certificate",
+        Item: {
+          id,
+          name,
+          grade,
+          created_at: new Date().getTime(),
+        },
+      })
+      .promise();
+  }
 
   const medalPath = join(process.cwd(), "src", "templates", "selo.png");
   const medal = readFileSync(medalPath, "base64");
@@ -68,8 +73,56 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
   const content = await compileTemplate(data);
 
+  const browser = await chromium.puppeteer.launch({
+    args: chromium.args,
+    defaultViewport: chromium.defaultViewport,
+    executablePath: await chromium.executablePath,
+    //headless: chromium.headless,
+    ignoreHTTPSErrors: true,
+  });
+
+  const page = await browser.newPage();
+
+  await page.setContent(content);
+  const pdf = await page.pdf({
+    format: "a4",
+    landscape: true,
+    printBackground: true,
+    preferCSSPageSize: true,
+    path: process.env.IS_OFFLINE ? "./certificate.pdf" : null,
+  });
+
+  await browser.close();
+
+  /* const s3 = new S3();
+
+  // Criando Bucket, Roda só uma vez
+  await s3
+    .createBucket({
+      Bucket: "certificateignite2021",
+    })
+    .promise();
+
+  await s3
+    .putObject({
+      Bucket: "certificateignite2021",
+      Key: `${id}.pdf`,
+      ACL: "public-read",
+      Body: pdf,
+      ContentType: "application/pdf",
+    })
+    .promise();*/
+
+  // return {
+  //   statusCode: 201,
+  //   body: JSON.stringify(response.Items[0]),
+  // };
+
   return {
     statusCode: 201,
-    body: JSON.stringify(response.Items[0]),
+    body: JSON.stringify({
+      message: "Certificado criado com sucesso!",
+      url: `http://certificateignite2021.s3.amazonaws.com/${id}.pdf`,
+    }),
   };
 };
